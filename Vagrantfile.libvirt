@@ -1,30 +1,28 @@
-NUMBER_OF_MEMBERS = 2
+NUMBER_OF_MEMBERS = 3
 OS_DISTRO = "debian"
 OS_VERSION = "buster64"
-MEMBER_HOSTNAME_PREFIX = "#{OS_DISTRO}#{OS_VERSION}"
+MEMBER_HOSTNAME_PREFIX = "k8s-"
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "#{OS_DISTRO}/#{OS_VERSION}"
-
-  config.vm.provider "libvirt" do |v|
-    v.memory = 4096
-    v.cpus = 2
-    config.vm.synced_folder ".", "/vagrant", disabled: true
-    v.management_network_name = "default"
-    v.management_network_address = "10.0.0.0/24"
-  end
-
   (1..NUMBER_OF_MEMBERS).each do |i|
-    vm_name = "#{MEMBER_HOSTNAME_PREFIX}#{i}"
-    config.vm.define vm_name do |server|
-      # yeni bir bridge network oluşturup bu network kullanılabilir.
-      config.vm.provision "shell", inline: 'echo "vagrant:vagrant" | chpasswd'
-      config.vm.hostname = "#{vm_name}"
-      config.vm.provision "shell", inline: <<-SHELL
-	    sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config   
-	    hostname -I
-	    systemctl restart ssh 
- SHELL
+    config.vm.box = "#{OS_DISTRO}/#{OS_VERSION}"
+    # libvirt settings
+    config.vm.provider "libvirt" do |v|
+      v.memory = 4096
+      v.cpus = 2
+      config.vm.synced_folder ".", "/vagrant", disabled: true
+      v.management_network_name = "default"
+      v.management_network_address = "10.0.0.0/24"
+    end
+    config.vm.define "#{MEMBER_HOSTNAME_PREFIX}#{i}" do |node|
+      node.vm.provision "shell", inline: 'echo "vagrant:vagrant" | chpasswd'
+      node.vm.hostname = "#{MEMBER_HOSTNAME_PREFIX}#{i}"
+      node.vm.provision "shell", inline: <<-SHELL
+          sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config   
+	  ## node ip addresses
+          hostname -I
+          systemctl restart ssh 
+     SHELL
     end
   end
 end
