@@ -6,7 +6,7 @@ CLUSTER_RANGE = "10.11.12"
 CLUSTER_RANGE_START = 2
 NUMBER_OF_MEMBERS = 3
 OS_DISTRO = "generic"
-OS_VERSION = "centos8"
+OS_VERSION = "ubuntu2004"
 MEMBER_HOSTNAME_PREFIX = "#{OS_DISTRO}#{OS_VERSION}"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -23,7 +23,12 @@ end
         config.vm.define vm_name do |server|
           server.vm.hostname = vm_name
           server.vm.network "private_network", ip: "#{ip_address}"
-          server.vm.provision "shell", path: "scripts/script.sh", args: "#{ip_address}"
-        end
+          server.vm.provision "shell", inline: <<-SHELL
+          sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config   
+	          ## node ip addresses
+            hostname -I
+            systemctl restart ssh 
+            hostname -I
+          SHELL                  
       end
 end
